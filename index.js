@@ -29,7 +29,7 @@ function verifyJWT(req,res,next){
       return res.status(401).send('unauthorized acccess');
     }
     const token=authHerader.split(' ')[1];
-    jwt.verify(token, process.env.ACCESS_TOKEN, function (err, decoded) {
+    jwt.verify(token, process.env.STRIPE_SECRET_KEY, function (err, decoded) {
       if (err) {
           return res.status(403).send({ message: 'forbidden access' })
       }
@@ -46,6 +46,22 @@ async function run(){
         const categoryCollection=client.db("first-sale").collection("categorys");
         const productsBookingCollection=client.db('first-sale').collection('productsBooking');
         const userCollection = client.db("first-sale").collection("user");
+
+        const verifyAdmin = async (req, res, next) =>{
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await userCollection.findOne(query);
+      
+            if (user?.role !== 'admin') {
+                return res.status(403).send({ message: 'forbidden access' })
+            }
+            next();
+        }
+
+
+
+
+
         app.get('/brands',async(req,res)=>{
             const query={};
             const result= await brandsCollection.find(query).toArray();
@@ -92,14 +108,26 @@ async function run(){
                 const result=await productsBookingCollection.insertOne(bookingproduct)
                 res.send(result)
             })
+
+            app.get('/bookingproducts/:id', async (req, res) => {
+                const id = req.params.id;
+                const query = { _id: ObjectId(id) };
+                const booking = await productsBookingCollection.findOne(query);
+                res.send(booking);
+            })
+
+
+
+
             app.get('/bookingproducts',verifyJWT,async(req,res)=>{
-                const email =req.query.email;
-                console.log('axccessToken',req.headers.authorization);
+                 const email =req.query.email;
+            
+                 console.log('axccessToken',req.headers.authorization);
                 const decodedEmail = req.decoded.email;
 
             if (email !== decodedEmail) {
                 return res.status(403).send({ message: 'forbidden access' });
-            }
+            } 
 
                 const query={email:email};
                 const productBooking=await productsBookingCollection.find(query).toArray();
@@ -120,6 +148,18 @@ async function run(){
 
           
               })
+              app.get('/users',async(req,res)=>{
+                const query={};
+                const users= await userCollection.find(query).toArray();
+                res.send(users);
+              })
+
+              app.get('/users/admin/:email', async (req, res) => {
+                const email = req.params.email;
+                const query = { email }
+                const user = await userCollection.findOne(query);
+                res.send({ isAdmin: user?.role === 'admin' });
+            })
 
             app.post('/users',async(req,res)=>{
                 const user=req.body;
@@ -127,6 +167,20 @@ async function run(){
                 const result=await userCollection.insertOne(user);
                  res.send(result);
             })
+
+            app.put('/users/admin/:id',verifyJWT,verifyAdmin, async(req,res)=>{
+                const id=req.params.id;
+                 const filter={_id: ObjectId(id)}
+                 const options={upsert:true};
+                 const updatedDoc={
+                   $set: {
+                     role: 'admin'
+                   }
+                 }
+                   const result =await userCollection.updateOne(filter,updatedDoc,options);
+                   res.send(result)
+               
+               })
 
     }
     
