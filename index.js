@@ -47,7 +47,7 @@ async function run(){
         const categoryCollection=client.db("first-sale").collection("categorys");
         const productsBookingCollection=client.db('first-sale').collection('productsBooking');
         const userCollection = client.db("first-sale").collection("user");
-
+        const paymentsCollection = client.db('doctorsPortal').collection('payments');
         const verifyAdmin = async (req, res, next) =>{
             const decodedEmail = req.decoded.email;
             const query = { email: decodedEmail };
@@ -128,25 +128,21 @@ async function run(){
             })
 
             app.delete('/myproduct/:id',async(req,res)=>{
-              const id =req.params.id;
-              console.log(id);
+              const id =req.params.id;    
               filter={_id:ObjectId(id)};
               const result=await categoryCollection.deleteOne(filter);
-              console.log(result);
+            
               res.send(result)
             })
 
 
             app.get('/bookingproducts',verifyJWT,async(req,res)=>{
                  const email =req.query.email;
-            
                  console.log('axccessToken',req.headers.authorization);
                 const decodedEmail = req.decoded.email;
-
             if (email !== decodedEmail) {
                 return res.status(403).send({ message: 'forbidden access' });
             } 
-
                 const query={email:email};
                 const productBooking=await productsBookingCollection.find(query).toArray();
                 res.send(productBooking)
@@ -156,7 +152,6 @@ async function run(){
               const booking = req.body;
               const price = booking.price;
               const amount = price * 100;
-        
               const paymentIntent = await stripe.paymentIntents.create({
                   currency: 'usd',
                   amount: amount,
@@ -184,11 +179,6 @@ async function run(){
             const updatedResult = await productsBookingCollection.updateOne(filter, updatedDoc)
             res.send(result);
         })
-
-
-
-
-
 
             app.get('/jwt', async(req,res)=>{
                 const email=req.query.email;
@@ -237,6 +227,8 @@ async function run(){
                    res.send(result)
                
                })
+
+            app.get()
 
     }
     
