@@ -5,6 +5,7 @@ const cors=require('cors');
 const jwt = require('jsonwebtoken');
 const app = express();
 const port = process.env.PORT || 5000;
+const stripe = require("stripe")(process.env.STRIPE_SECRET_KEY);
 
 
 
@@ -58,11 +59,7 @@ async function run(){
             next();
         }
 
-
-
-
-
-        app.get('/brands',async(req,res)=>{
+   app.get('/brands',async(req,res)=>{
             const query={};
             const result= await brandsCollection.find(query).toArray();
             res.send(result);
@@ -79,6 +76,8 @@ async function run(){
             const result= await categoryCollection.find(query).toArray();
             res.send(result);
          })
+         
+         
 
           app.get('/category/:id',async(req,res)=>{
             const id =req.params.id;
@@ -89,19 +88,21 @@ async function run(){
              res.send(category);
         
             })
-            app.put('/laptop/:id',async(req,res)=>{
+
+          /*   app.put('/myproduct/:id',async(req,res)=>{
                 const id =req.params.id;
                 const filter={_id:ObjectId(id)};
                 const options={upsert: true};
 
                 const updateDoc={
                     $set:{
-                        status: 'booked',
+                        status: 'addUpload',
                     }
                 }
                 const updatedResult =await categoryCollection.updateOne(filter,updateDoc,options);
                 res.send(updatedResult)
-            })
+            }) */
+
             app.post('/bookingproducts',async(req,res)=>{
                 const bookingproduct=req.body;
                 console.log(bookingproduct);
@@ -116,7 +117,22 @@ async function run(){
                 res.send(booking);
             })
 
+           
 
+
+            app.get('/myproduct',async(req,res)=>{
+                 const email =req.query.email;
+                const query={email:email};
+                const productBooking=await categoryCollection.find(query).toArray();
+                res.send(productBooking)
+            })
+
+            app.delete('/myproduct/:id',async(req,res)=>{
+              const id =req.params.id;
+              filter={id:ObjectId(id)}
+              const result=await categoryCollection.deleteOne(filter)
+              res.send(result)
+            })
 
 
             app.get('/bookingproducts',verifyJWT,async(req,res)=>{
@@ -133,6 +149,44 @@ async function run(){
                 const productBooking=await productsBookingCollection.find(query).toArray();
                 res.send(productBooking)
             })
+
+            app.post('/create-payment-intent', async (req, res) => {
+              const booking = req.body;
+              const price = booking.price;
+              const amount = price * 100;
+        
+              const paymentIntent = await stripe.paymentIntents.create({
+                  currency: 'usd',
+                  amount: amount,
+                  "payment_method_types": [
+                      "card"
+                  ]
+              });
+              res.send({
+                  clientSecret: paymentIntent.client_secret,
+              });
+          });
+
+
+          app.post('/payments', async (req, res) =>{
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment);
+            const id = payment.bookingId
+            const filter = {_id: ObjectId(id)}
+            const updatedDoc = {
+                $set: {
+                    paid: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedResult = await productsBookingCollection.updateOne(filter, updatedDoc)
+            res.send(result);
+        })
+
+
+
+
+
 
             app.get('/jwt', async(req,res)=>{
                 const email=req.query.email;
