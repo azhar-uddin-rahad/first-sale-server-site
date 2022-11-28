@@ -25,7 +25,8 @@ async function run(){
     try{
         const brandsCollection=client.db("first-sale").collection("brands");
         const categoryCollection=client.db("first-sale").collection("categorys");
-        const productsBookingCollection=client.db('first-sale').collection('productsBooking')
+        const productsBookingCollection=client.db('first-sale').collection('productsBooking');
+        const userCollection = client.db("first-sale").collection("user");
         app.get('/brands',async(req,res)=>{
             const query={};
             const result= await brandsCollection.find(query).toArray();
@@ -77,6 +78,12 @@ async function run(){
                 const query={email:email};
                 const productBooking=await productsBookingCollection.find(query).toArray();
                 res.send(productBooking)
+            })
+            app.post('/users',async(req,res)=>{
+                const user=req.body;
+                console.log(user)
+                const result=await userCollection.insertOne(user);
+                 res.send(result);
             })
 
     }
