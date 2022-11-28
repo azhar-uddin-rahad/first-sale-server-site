@@ -1,5 +1,5 @@
 const express=require('express');
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 require('dotenv').config()
 const cors=require('cors');
 const app = express();
@@ -25,6 +25,7 @@ async function run(){
     try{
         const brandsCollection=client.db("first-sale").collection("brands");
         const categoryCollection=client.db("first-sale").collection("categorys");
+        const productsBookingCollection=client.db('first-sale').collection('productsBooking')
         app.get('/brands',async(req,res)=>{
             const query={};
             const result= await brandsCollection.find(query).toArray();
@@ -33,7 +34,6 @@ async function run(){
 
          app.post("/categorys", async (req, res) => {
             const category = req.body;
-            console.log(category);
             const result = await categoryCollection.insertOne(category);
             res.send(result);
           });
@@ -49,10 +49,34 @@ async function run(){
             const query={
                 category_id : id
             }
-            console.log(id);
             const category =await categoryCollection.find(query).toArray();
              res.send(category);
         
+            })
+            app.put('/laptop/:id',async(req,res)=>{
+                const id =req.params.id;
+                const filter={_id:ObjectId(id)};
+                const options={upsert: true};
+
+                const updateDoc={
+                    $set:{
+                        status: 'booked',
+                    }
+                }
+                const updatedResult =await categoryCollection.updateOne(filter,updateDoc,options);
+                res.send(updatedResult)
+            })
+            app.post('/bookingproducts',async(req,res)=>{
+                const bookingproduct=req.body;
+                console.log(bookingproduct);
+                const result=await productsBookingCollection.insertOne(bookingproduct)
+                res.send(result)
+            })
+            app.get('/bookingproducts',async(req,res)=>{
+                const email =req.query.email;
+                const query={email:email};
+                const productBooking=await productsBookingCollection.find(query).toArray();
+                res.send(productBooking)
             })
 
     }
