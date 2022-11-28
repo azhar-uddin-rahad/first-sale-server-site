@@ -129,8 +129,10 @@ async function run(){
 
             app.delete('/myproduct/:id',async(req,res)=>{
               const id =req.params.id;
-              filter={id:ObjectId(id)}
-              const result=await categoryCollection.deleteOne(filter)
+              console.log(id);
+              filter={_id:ObjectId(id)};
+              const result=await categoryCollection.deleteOne(filter);
+              console.log(result);
               res.send(result)
             })
 
