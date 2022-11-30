@@ -170,7 +170,7 @@ async function run(){
                   // transactionId: payment.transactionId
                 }
               }
-              const updatedResult = await bikesCollection.updateOne(filter, updatedDoc, options)
+              const updatedResult = await categoryCollection.updateOne(filter, updatedDoc, options)
         
               res.send(updatedResult)
             })
@@ -276,7 +276,7 @@ async function run(){
             app.delete('/user/:id',async(req,res)=>{
               const id =req.params.id;    
               filter={_id:ObjectId(id)};
-              const result=await userCollection.deleteOne(filter);
+              const result=await categoryCollection.deleteOne(filter);
               res.send(result)
             })
 
