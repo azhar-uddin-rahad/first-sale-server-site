@@ -13,6 +13,7 @@ app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
+  
   res.send("First Sale project is running");
  
 });
@@ -48,6 +49,8 @@ async function run(){
         const productsBookingCollection=client.db('first-sale').collection('productsBooking');
         const userCollection = client.db("first-sale").collection("user");
         const paymentsCollection = client.db('doctorsPortal').collection('payments');
+       const blogs =client.db('first-sale').collection('blogs');
+
         const verifyAdmin = async (req, res, next) =>{
             const decodedEmail = req.decoded.email;
             const query = { email: decodedEmail };
@@ -59,13 +62,22 @@ async function run(){
             next();
         }
 
-   app.get('/brands',async(req,res)=>{
+        app.get('/blogs',async(req,res)=>{
+          const currentPage= parseInt(req.query.currentPage);
+          const size=parseInt(req.query.size);
+          console.log(currentPage)
+          console.log(size)
+          const query={};
+          const blogPostDatabase=await blogs.find(query).skip(currentPage*size).limit(size).toArray();
+          const count = await blogs.estimatedDocumentCount()
+          res.send({count,blogPostDatabase});
+        })
+         app.get('/brands',async(req,res)=>{
             const query={};
             const result= await brandsCollection.find(query).toArray();
             res.send(result);
          })
-
-         app.post("/categorys", async (req, res) => {
+       app.post("/categorys", async (req, res) => {
             const category = req.body;
             const result = await categoryCollection.insertOne(category);
             res.send(result);
@@ -76,8 +88,6 @@ async function run(){
             const result= await categoryCollection.find(query).toArray();
             res.send(result);
          })
-         
-         
 
           app.get('/category/:id',async(req,res)=>{
             const id =req.params.id;
@@ -86,41 +96,21 @@ async function run(){
             }
             const category =await categoryCollection.find(query).toArray();
              res.send(category);
-        
             })
-
-          /*   app.put('/myproduct/:id',async(req,res)=>{
-                const id =req.params.id;
-                const filter={_id:ObjectId(id)};
-                const options={upsert: true};
-
-                const updateDoc={
-                    $set:{
-                        status: 'addUpload',
-                    }
-                }
-                const updatedResult =await categoryCollection.updateOne(filter,updateDoc,options);
-                res.send(updatedResult)
-            }) */
-
+                  
             app.post('/bookingproducts',async(req,res)=>{
                 const bookingproduct=req.body;
                 console.log(bookingproduct);
                 const result=await productsBookingCollection.insertOne(bookingproduct)
                 res.send(result)
             })
-
-            app.get('/bookingproducts/:id', async (req, res) => {
+          app.get('/bookingproducts/:id', async (req, res) => {
                 const id = req.params.id;
                 const query = { _id: ObjectId(id) };
                 const booking = await productsBookingCollection.findOne(query);
                 res.send(booking);
             })
-
-           
-
-
-            app.get('/myproduct',async(req,res)=>{
+           app.get('/myproduct',async(req,res)=>{
                  const email =req.query.email;
                 const query={email:email};
                 const productBooking=await categoryCollection.find(query).toArray();
@@ -131,33 +121,26 @@ async function run(){
               const id =req.params.id;    
               filter={_id:ObjectId(id)};
               const result=await categoryCollection.deleteOne(filter);
-            
               res.send(result)
             })
             app.put('/myproductAdvertise/:id', async (req, res) => {
-
               const id = req.params.id;
               // console.log(id);
               const filter = { _id: ObjectId(id) }
               const options = { upsert: true };
               const updatedDoc = {
                 $set: {
-                  status: 'advertised',
-                  
+                  status: 'advertised',   
                 }
               }
               const updatedResult = await categoryCollection.updateOne(filter, updatedDoc, options)
-        
               res.send(updatedResult)
             })
             app.get('/bookingStatus',async(req,res)=>{
-
               const statusAdd = req.query.status;
               const query = { status: statusAdd }
               const result = await categoryCollection.find(query).toArray()
               res.send(result)
-
-
             })
             app.put('/productReport/:id', async (req, res) => {
               const id = req.params.id;
@@ -171,7 +154,6 @@ async function run(){
                 }
               }
               const updatedResult = await categoryCollection.updateOne(filter, updatedDoc, options)
-        
               res.send(updatedResult)
             })
             app.get('/ProductReported', async (req, res) => {
@@ -191,7 +173,7 @@ async function run(){
                  const email =req.query.email;
                  console.log('axccessToken',req.headers.authorization);
                 const decodedEmail = req.decoded.email;
-            if (email !== decodedEmail) {
+                if (email !== decodedEmail) {
                 return res.status(403).send({ message: 'forbidden access' });
             } 
                 const query={email:email};
@@ -230,20 +212,16 @@ async function run(){
             const updatedResult = await productsBookingCollection.updateOne(filter, updatedDoc)
             res.send(result);
         })
-
             app.get('/jwt', async(req,res)=>{
                 const email=req.query.email;
                 const query={email: email}
                 const user= await userCollection.findOne(query);
                 if(user){
                   const token=jwt.sign({email}, process.env.STRIPE_SECRET_KEY, {expiresIn: '1h'});
-                 
                   return res.send({accessToken: token})
                 }
+              res.status(403).send({accessToken:''}) 
 
-                res.status(403).send({accessToken:''}) 
-
-          
               })
               app.get('/dashboard/users',async(req,res)=>{
                 const query={
@@ -314,7 +292,7 @@ async function run(){
                
                })
 
-          
+    
 
     }
     
